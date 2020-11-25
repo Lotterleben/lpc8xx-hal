@@ -211,6 +211,107 @@ pub struct GpioPin<T, D> {
     _direction: D,
 }
 
+/// TODO docs
+pub struct DynamicGpioPin<D> {
+    // we can't use tokens to ID the pin so let's YOLO for now and store the same info but different
+    _port: usize, // TODO: why is this a usize in the original Trait? seems wasteful?
+    _mask: u32,
+    _direction: D,
+}
+
+// TODO only impl for D = Dynamic? Do we even need a <D> then?
+impl<D> DynamicGpioPin<D>
+where
+    D: Direction,
+{
+    /// TODO docs
+    pub(crate) fn new<T: pins::Trait>(
+        _token: Token<T, init_state::Enabled>,
+        arg: D::SwitchArg,
+    ) -> Self {
+        // This is sound, as we only write to stateless registers, restricting
+        // ourselves to the bit that belongs to the pin represented by `T`.
+        // Since all other instances of `GpioPin` and `DynamicGpioPin` are doing the same, there are
+        // no race conditions.
+        let gpio = unsafe { &*pac::GPIO::ptr() };
+        let registers = Registers::new(gpio);
+        let direction = D::switch::<T>(&registers, arg);
+
+        Self {
+            _port: T::PORT,
+            _mask: T::MASK,
+            _direction: direction,
+        }
+    }
+}
+
+impl DynamicGpioPin<direction::Dynamic> {
+    /// TODO add docs
+    pub fn direction_is_output(&self) -> bool {
+        return self._direction.is_output;
+    }
+
+    /// TODO add docs
+    pub fn direction_is_input(&self) -> bool {
+        return !self.direction_is_output();
+    }
+
+    /// Switch pin direction to input. If the pin is already an input pin, this does nothing.
+    pub fn switch_to_input(&mut self) {
+        // TODO decide what I want here: rm Dynamic direction or not?
+        if self.direction_is_output() == false {
+            return;
+        }
+
+        // This is sound, as we only do a stateless write to a bit that no other
+        // `GpioPin` instance writes to.
+        let gpio = unsafe { &*pac::GPIO::ptr() };
+        let registers = Registers::new(gpio);
+
+        // switch direction
+        //set_direction_input::<T>(&registers);
+        registers.dirclr[self._port]
+            .write(|w| unsafe { w.dirclrp().bits(self._mask) });
+        self._direction.is_output = false;
+    }
+
+    /// Switch pin direction to output with output level set to `level`.
+    /// If the pin is already an output pin, this function only switches its level to `level`.
+    pub fn switch_to_output(&mut self, level: Level) {
+        // we are already in output, nothing else to do
+        if self.direction_is_output() {
+            return;
+        }
+
+        // This is sound, as we only do a stateless write to a bit that no other
+        // `GpioPin` instance writes to.
+        let gpio = unsafe { &*pac::GPIO::ptr() };
+        let registers = Registers::new(gpio);
+
+        // First set the output level, before we switch the mode.
+        match level {
+            Level::High => {
+                // self.set_high()
+                registers.set[self._port]
+                    .write(|w| unsafe { w.setp().bits(self._mask) });
+            }
+            Level::Low => {
+                // self.set_low()},
+                registers.clr[self._port]
+                    .write(|w| unsafe { w.clrp().bits(self._mask) });
+            }
+        }
+
+        // Now that the output level is configured, we can safely switch to
+        // output mode, without risking an undesired signal between now and
+        // the first call to `set_high`/`set_low`.
+        //set_direction_output::<T>(&registers);
+        registers.dirset[self._port]
+            .write(|w| unsafe { w.dirsetp().bits(self._mask) });
+        self._direction.is_output = true;
+    }
+}
+
 impl<T, D> GpioPin<T, D>
 where
     T: pins::Trait,

@@ -1,5 +1,5 @@
 use crate::{
-    gpio::{direction, GpioPin, Level},
+    gpio::{direction, DynamicGpioPin, GpioPin, Level},
     init_state,
 };
 
@@ -363,6 +363,16 @@ where
         direction: DynamicPinDirection,
     ) -> GpioPin<T, direction::Dynamic> {
         GpioPin::new(token, (level, direction))
+    }
+
+    /// TODO rm old, check docs
+    pub fn into_dynamic_pin_2(
+        self,
+        token: Token<T, init_state::Enabled>,
+        initial: Level,
+    ) -> DynamicGpioPin<direction::Dynamic> {
+        // TODO: pass an initial direction too!
+        DynamicGpioPin::new(token, initial)
     }
 
     /// Transition pin to SWM mode
