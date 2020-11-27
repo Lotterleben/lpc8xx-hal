@@ -256,6 +256,19 @@ impl DynamicGpioPin<direction::Dynamic> {
         return !self.direction_is_output();
     }
 
+    /// TODO docs
+    pub fn is_high(&self) -> bool {
+        // This is sound, as we only do a stateless write to a bit that no other
+        // `GpioPin` instance writes to.
+        let gpio = unsafe { &*pac::GPIO::ptr() };
+        let registers = Registers::new(gpio);
+
+        // TODO no copypasta
+        // is_high::<T>(&registers)
+        registers.pin[self._port].read().port().bits() & self._mask
+            == self._mask
+    }
+
     /// Switch pin direction to input. If the pin is already an input pin, this does nothing.
     pub fn switch_to_input(&mut self) {
         // TODO decide what I want here: rm Dynamic direction or not?
@@ -269,6 +282,7 @@ impl DynamicGpioPin<direction::Dynamic> {
         let registers = Registers::new(gpio);
 
         // switch direction
+        // TODO no copypasta
         //set_direction_input::<T>(&registers);
         registers.dirclr[self._port]
             .write(|w| unsafe { w.dirclrp().bits(self._mask) });
@@ -291,11 +305,13 @@ impl DynamicGpioPin<direction::Dynamic> {
         // First set the output level, before we switch the mode.
         match level {
             Level::High => {
+                // TODO no copypasta
                 // self.set_high()
                 registers.set[self._port]
                     .write(|w| unsafe { w.setp().bits(self._mask) });
             }
             Level::Low => {
+                // TODO no copypasta
                 // self.set_low()},
                 registers.clr[self._port]
                     .write(|w| unsafe { w.clrp().bits(self._mask) });
@@ -305,6 +321,7 @@ impl DynamicGpioPin<direction::Dynamic> {
         // Now that the output level is configured, we can safely switch to
         // output mode, without risking an undesired signal between now and
         // the first call to `set_high`/`set_low`.
+        // TODO no copypasta
         //set_direction_output::<T>(&registers);
         registers.dirset[self._port]
             .write(|w| unsafe { w.dirsetp().bits(self._mask) });
