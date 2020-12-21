@@ -369,10 +369,11 @@ where
     pub fn into_dynamic_pin_2(
         self,
         token: Token<T, init_state::Enabled>,
-        initial: Level,
+        level: Level,
+        direction: DynamicPinDirection,
     ) -> DynamicGpioPin<direction::Dynamic> {
         // TODO: pass an initial direction too!
-        DynamicGpioPin::new(token, initial)
+        DynamicGpioPin::new(token, (level, direction))
     }
 
     /// Transition pin to SWM mode

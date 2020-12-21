@@ -248,12 +248,14 @@ where
 impl DynamicGpioPin<direction::Dynamic> {
     /// TODO add docs
     pub fn direction_is_output(&self) -> bool {
-        return self._direction.is_output;
+        return self._direction.current_direction
+            == pins::DynamicPinDirection::Output;
     }
 
     /// TODO add docs
     pub fn direction_is_input(&self) -> bool {
-        return !self.direction_is_output();
+        return self._direction.current_direction
+            == pins::DynamicPinDirection::Input;
     }
 
     /// TODO docs
@@ -286,7 +288,7 @@ impl DynamicGpioPin<direction::Dynamic> {
         //set_direction_input::<T>(&registers);
         registers.dirclr[self._port]
             .write(|w| unsafe { w.dirclrp().bits(self._mask) });
-        self._direction.is_output = false;
+        self._direction.current_direction = pins::DynamicPinDirection::Input;
     }
 
     /// Switch pin direction to output with output level set to `level`.
@@ -325,7 +327,7 @@ impl DynamicGpioPin<direction::Dynamic> {
         //set_direction_output::<T>(&registers);
         registers.dirset[self._port]
             .write(|w| unsafe { w.dirsetp().bits(self._mask) });
-        self._direction.is_output = true;
+        self._direction.current_direction = pins::DynamicPinDirection::Output;
     }
 }
 
