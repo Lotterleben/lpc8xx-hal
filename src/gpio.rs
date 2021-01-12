@@ -271,6 +271,52 @@ impl DynamicGpioPin<direction::Dynamic> {
             == self._mask
     }
 
+    /// Set the pin output to HIGH
+    ///
+    /// This method is only available, if two conditions are met:
+    /// - The pin is in the GPIO state.
+    /// - The pin direction is set to output.
+    ///
+    /// See [`Pin::into_output_pin`] and [`into_output`]. Unless both of these
+    /// conditions are met, code trying to call this method will not compile.
+    ///
+    /// [`Pin::into_output_pin`]: ../pins/struct.Pin.html#method.into_output_pin
+    /// [`into_output`]: #method.into_output
+    pub fn set_high(&mut self) {
+        // This is sound, as we only do a stateless write to a bit that no other
+        // `GpioPin` instance writes to.
+        let gpio = unsafe { &*pac::GPIO::ptr() };
+        let registers = Registers::new(gpio);
+
+        // TODO no copypasta
+        //set_high::<T>(&registers);
+        registers.set[self._port]
+            .write(|w| unsafe { w.setp().bits(self._mask) });
+    }
+
+    /// Set the pin output to LOW
+    ///
+    /// This method is only available, if two conditions are met:
+    /// - The pin is in the GPIO state.
+    /// - The pin direction is set to output.
+    ///
+    /// See [`Pin::into_output_pin`] and [`into_output`]. Unless both of these
+    /// conditions are met, code trying to call this method will not compile.
+    ///
+    /// [`Pin::into_output_pin`]: ../pins/struct.Pin.html#method.into_output_pin
+    /// [`into_output`]: #method.into_output
+    pub fn set_low(&mut self) {
+        // This is sound, as we only do a stateless write to a bit that no other
+        // `GpioPin` instance writes to.
+        let gpio = unsafe { &*pac::GPIO::ptr() };
+        let registers = Registers::new(gpio);
+
+        // TODO no copypasta
+        //set_low::<T>(&registers);
+        registers.clr[self._port]
+            .write(|w| unsafe { w.clrp().bits(self._mask) });
+    }
+
     /// Switch pin direction to input. If the pin is already an input pin, this does nothing.
     pub fn switch_to_input(&mut self) {
         // TODO decide what I want here: rm Dynamic direction or not?
