@@ -967,7 +967,7 @@ where
 }
 
 /// The voltage level of a pin
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Level {
     /// High voltage
     High,
