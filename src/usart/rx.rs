@@ -272,6 +272,8 @@ where
             let rx_dat_stat = usart.rxdatstat.read();
 
             if stat.overrunint().bit_is_set() {
+                // clear overrun error bit
+                usart.stat.write(|w| w.overrunint().set_bit());
                 Err(nb::Error::Other(Error::Overrun))
             } else if rx_dat_stat.framerr().bit_is_set() {
                 Err(nb::Error::Other(Error::Framing))
